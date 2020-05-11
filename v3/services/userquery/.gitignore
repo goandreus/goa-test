@@ -1,0 +1,9 @@
+# ignore build & compose folders
+build/
+compose/
+
+# MAC files
+.DS_Store
+
+# Goland
+.idea

@@ -1,0 +1,9 @@
+{
+    "go.testEnvVars": {
+        "GO111MODULE":"on"
+    },
+    "go.liveErrors": {
+        "enabled": false,
+        "delay": 500
+    }
+}

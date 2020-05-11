@@ -1,0 +1,2386 @@
+swagger: "2.0"
+info:
+  title: UserQuery
+  description: API service to authenticate users. The service requires an ArangoDB
+    server. Data synchronization with other services is done via a shared NATS Streaming
+    event bus.
+  contact:
+    name: Christophe PEILLET (CTO)
+    email: christophe.peillet@wiserskills.com
+    url: ""
+  version: 1.0.0
+host: 0.0.0.0:8080
+consumes:
+- application/json
+- application/xml
+- application/gob
+produces:
+- application/json
+- application/xml
+- application/gob
+paths:
+  /check:
+    post:
+      tags:
+      - userquery
+      summary: CheckToken userquery
+      description: Checks if the passed token is valid.
+      operationId: userquery#CheckToken
+      parameters:
+      - name: Authorization
+        in: header
+        description: JWT used for authentication
+        required: true
+        type: string
+      - name: X-API-KEY
+        in: header
+        description: API key
+        required: true
+        type: string
+      - name: X-ORG-ID
+        in: header
+        description: The id of the organization
+        required: true
+        type: string
+        maxLength: 255
+      - name: X-AREA-ID
+        in: header
+        description: The id of the area
+        required: true
+        type: string
+        maxLength: 4
+        minLength: 2
+        enum:
+        - PROD
+        - DEV
+        - QA
+        - UAT
+      responses:
+        "200":
+          description: OK response.
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserqueryCheckTokenBadArgumentResponseBody'
+        "403":
+          description: Forbidden response.
+          schema:
+            $ref: '#/definitions/UserqueryCheckTokenNotAuthorizedResponseBody'
+        "404":
+          description: Not Found response.
+          schema:
+            $ref: '#/definitions/UserqueryCheckTokenNotFoundResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserqueryCheckTokenUnexpectedErrorResponseBody'
+      schemes:
+      - http
+      security:
+      - api_key_header_X-API-KEY: []
+        jwt_header_Authorization: []
+  /health:
+    get:
+      tags:
+      - userquery
+      summary: health userquery
+      description: Health status endpoint.
+      operationId: userquery#health
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/UserqueryHealthResult'
+      schemes:
+      - http
+  /metrics:
+    get:
+      tags:
+      - userquery
+      summary: metrics userquery
+      description: Prometheus metrics endpoint.
+      operationId: userquery#metrics
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            type: string
+      schemes:
+      - http
+  /saml:
+    get:
+      tags:
+      - userquery
+      summary: GetIDPURL userquery
+      description: Returns the URL of the IDP to redirect the user to.
+      operationId: userquery#GetIDPURL
+      parameters:
+      - name: X-API-KEY
+        in: header
+        description: API key
+        required: true
+        type: string
+      - name: X-ORG-ID
+        in: header
+        description: The id of the organization
+        required: true
+        type: string
+        maxLength: 255
+      - name: X-AREA-ID
+        in: header
+        description: The id of the area
+        required: true
+        type: string
+        maxLength: 20
+        enum:
+        - PROD
+        - DEV
+        - QA
+        - UAT
+      - name: Host
+        in: header
+        description: The target host.
+        required: true
+        type: string
+      responses:
+        "308":
+          description: Permanent Redirect response.
+          headers:
+            Location:
+              description: The url to redirect the caller to.
+              type: string
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserqueryGetIDPURLBadArgumentResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserqueryGetIDPURLUnexpectedErrorResponseBody'
+      schemes:
+      - http
+      security:
+      - api_key_header_X-API-KEY: []
+  /saml/signin:
+    post:
+      tags:
+      - userquery
+      summary: SamlSignIn userquery
+      description: Call back endpoint called by the IDP once the user is authenticated.
+      operationId: userquery#SamlSignIn
+      parameters:
+      - name: string
+        in: body
+        required: true
+        schema:
+          type: string
+      responses:
+        "308":
+          description: Permanent Redirect response.
+          headers:
+            Location:
+              description: The url to redirect the caller to.
+              type: string
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserquerySamlSignInBadArgumentResponseBody'
+        "403":
+          description: Forbidden response.
+          schema:
+            $ref: '#/definitions/UserquerySamlSignInNotAuthorizedResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserquerySamlSignInUnexpectedErrorResponseBody'
+      schemes:
+      - http
+  /sessions:
+    get:
+      tags:
+      - userquery
+      summary: GetAllSessions userquery
+      description: Returns the currently active sessions.
+      operationId: userquery#GetAllSessions
+      parameters:
+      - name: view
+        in: query
+        description: View to render.
+        required: false
+        type: string
+        enum:
+        - default
+        - tiny
+      - name: Authorization
+        in: header
+        description: JWT used for authentication
+        required: true
+        type: string
+        maxLength: 1024
+      - name: X-API-KEY
+        in: header
+        description: API key
+        required: true
+        type: string
+      - name: X-ORG-ID
+        in: header
+        description: The id of the organization
+        required: true
+        type: string
+        maxLength: 255
+      - name: X-AREA-ID
+        in: header
+        description: The id of the area
+        required: true
+        type: string
+        enum:
+        - PROD
+        - DEV
+        - QA
+        - UAT
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/UserquerySessionResponseCollection'
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserqueryGetAllSessionsBadArgumentResponseBody'
+        "403":
+          description: Forbidden response.
+          schema:
+            $ref: '#/definitions/UserqueryGetAllSessionsTokenInvalidResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserqueryGetAllSessionsUnexpectedErrorResponseBody'
+      schemes:
+      - http
+      security:
+      - api_key_header_X-API-KEY: []
+        jwt_header_Authorization: []
+  /signin:
+    post:
+      tags:
+      - userquery
+      summary: SignIn userquery
+      description: Signs a user in.
+      operationId: userquery#SignIn
+      parameters:
+      - name: X-API-KEY
+        in: header
+        description: API key
+        required: false
+        type: string
+      - name: X-ORG-ID
+        in: header
+        description: The id of the organization.
+        required: true
+        type: string
+      - name: X-AREA-ID
+        in: header
+        description: The id of the area.
+        required: true
+        type: string
+        enum:
+        - PROD
+        - UAT
+        - QA
+        - DEV
+      - name: Authorization
+        in: header
+        description: Basic Auth security using Basic scheme (https://tools.ietf.org/html/rfc7617)
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/UserquerySignInResponseBody'
+            required:
+            - token
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserquerySignInBadArgumentResponseBody'
+        "403":
+          description: Forbidden response.
+          schema:
+            $ref: '#/definitions/UserquerySignInLoginBlockedResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserquerySignInUnexpectedErrorResponseBody'
+      schemes:
+      - http
+      security:
+      - api_key_header_X-API-KEY: []
+        basic_header_Authorization: []
+  /signout:
+    post:
+      tags:
+      - userquery
+      summary: SignOut userquery
+      description: Signs a user out.
+      operationId: userquery#SignOut
+      parameters:
+      - name: Authorization
+        in: header
+        description: JWT used for authentication
+        required: true
+        type: string
+      - name: X-API-KEY
+        in: header
+        description: API key
+        required: true
+        type: string
+      - name: X-ORG-ID
+        in: header
+        description: The id of the organization
+        required: true
+        type: string
+        maxLength: 255
+      - name: X-AREA-ID
+        in: header
+        description: The id of the area
+        required: true
+        type: string
+        maxLength: 4
+        minLength: 2
+        enum:
+        - PROD
+        - DEV
+        - QA
+        - UAT
+      responses:
+        "200":
+          description: OK response.
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserquerySignOutBadArgumentResponseBody'
+        "403":
+          description: Forbidden response.
+          schema:
+            $ref: '#/definitions/UserquerySignOutNotAuthorizedResponseBody'
+        "404":
+          description: Not Found response.
+          schema:
+            $ref: '#/definitions/UserquerySignOutNotFoundResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserquerySignOutUnexpectedErrorResponseBody'
+      schemes:
+      - http
+      security:
+      - api_key_header_X-API-KEY: []
+        jwt_header_Authorization: []
+  /swagger:
+    get:
+      tags:
+      - userquery
+      summary: swagger userquery
+      description: Swagger service description endpoint.
+      operationId: userquery#swagger
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            type: string
+      schemes:
+      - http
+  /swaggerui:
+    get:
+      tags:
+      - userquery
+      summary: swagger-ui userquery
+      description: Swagger UI service endpoint.
+      operationId: userquery#swagger-ui
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            type: string
+      schemes:
+      - http
+  /users/id:
+    get:
+      tags:
+      - userquery
+      summary: GetUsersByID userquery
+      description: Returns the users with the specified ids.
+      operationId: userquery#GetUsersByID
+      parameters:
+      - name: view
+        in: query
+        description: The view used for the returned users
+        required: false
+        type: string
+        default: default
+      - name: Authorization
+        in: header
+        description: JWT used for authentication
+        required: true
+        type: string
+      - name: X-API-KEY
+        in: header
+        description: API key
+        required: true
+        type: string
+      - name: X-ORG-ID
+        in: header
+        description: The id of the organization
+        required: true
+        type: string
+        maxLength: 255
+      - name: X-AREA-ID
+        in: header
+        description: The id of the area
+        required: true
+        type: string
+        maxLength: 20
+        enum:
+        - PROD
+        - DEV
+        - QA
+        - UAT
+      - name: array
+        in: body
+        description: The ids of the users to retrieve
+        required: true
+        schema:
+          type: array
+          items:
+            type: string
+            example: Possimus voluptas.
+      responses:
+        "200":
+          description: OK response.
+          schema:
+            $ref: '#/definitions/UserqueryRegisteredUserResponseCollection'
+        "400":
+          description: Bad Request response.
+          schema:
+            $ref: '#/definitions/UserqueryGetUsersByIDBadArgumentResponseBody'
+        "403":
+          description: Forbidden response.
+          schema:
+            $ref: '#/definitions/UserqueryGetUsersByIDNotAuthorizedResponseBody'
+        "404":
+          description: Not Found response.
+          schema:
+            $ref: '#/definitions/UserqueryGetUsersByIDNotFoundResponseBody'
+        "500":
+          description: Internal Server Error response.
+          schema:
+            $ref: '#/definitions/UserqueryGetUsersByIDUnexpectedErrorResponseBody'
+      schemes:
+      - http
+      security:
+      - api_key_header_X-API-KEY: []
+        jwt_header_Authorization: []
+definitions:
+  RegisteredUserResponse:
+    title: 'Mediatype identifier: registereduser; view=default'
+    type: object
+    properties:
+      B2C:
+        type: boolean
+        description: Defines if this user is a B2C user.
+        default: false
+        example: false
+      active:
+        type: boolean
+        description: Defines if the entity is active.
+        default: true
+        example: true
+      address:
+        type: string
+        description: The address of the user.
+        example: 8, rue de l'Hôtel de Ville
+        maxLength: 1024
+      birthDate:
+        type: string
+        description: The birth date of the user.
+        example: "1982-01-01"
+        format: date
+      birthName:
+        type: string
+        description: The birth name of the user.
+        example: SMITH
+        maxLength: 255
+      cityId:
+        type: string
+        description: The id of the city.
+        example: FR92220
+      countryId:
+        type: string
+        description: The ISO 3166-1 code of the country.
+        example: FR
+        minLength: 2
+        maxLength: 2
+      createdAt:
+        type: string
+        description: The date/time the record was created.
+        example: "2019-01-01T12:52:24Z"
+        format: date-time
+      email:
+        type: string
+        description: The email of the user.
+        example: john.smith@google.com
+        format: email
+        maxLength: 512
+      firstName:
+        type: string
+        description: The first name of the user.
+        example: John
+        maxLength: 255
+      gender:
+        type: string
+        description: The gender of the user.
+        example: M
+        enum:
+        - M
+        - F
+        minLength: 1
+        maxLength: 1
+      id:
+        type: string
+        description: The UUID of the underlying or referenced entity.
+        example: 1f052270-dec6-4930-a042-eaec722407d1
+        format: uuid
+      languageId:
+        type: string
+        description: The ISO code of the user's prefered language.
+        example: en
+        minLength: 2
+        maxLength: 2
+      lastName:
+        type: string
+        description: The last name of the user.
+        example: SMITH
+        maxLength: 255
+      latitude:
+        type: number
+        description: The latitude of the user's address.
+        example: 41.40338
+        format: double
+      login:
+        type: string
+        description: The login of the user.
+        example: i73
+        maxLength: 255
+      longitude:
+        type: number
+        description: The longitude of the user's address.
+        example: 2.17403
+        format: double
+      mobile:
+        type: string
+        description: The user mobile phone number.
+        example: "+33645675637"
+        maxLength: 20
+      organizationId:
+        type: string
+        description: The id of organization where the user was created.
+        example: WiserSKILLS
+      roles:
+        type: array
+        items:
+          type: string
+          example: Nobis perspiciatis.
+        description: The list of the user roles.
+        example:
+        - Facere eum dolores.
+        - Sunt similique.
+        - Ut libero asperiores sint ut qui et.
+      updatedAt:
+        type: string
+        description: The date/time the record was last updated.
+        example: "2019-01-01T12:52:24Z"
+        format: date-time
+    description: Represents a registered user. (default view)
+    example:
+      B2C: false
+      active: true
+      address: 8, rue de l'Hôtel de Ville
+      birthDate: "1982-01-01"
+      birthName: SMITH
+      cityId: FR92220
+      countryId: FR
+      createdAt: "2019-01-01T12:52:24Z"
+      email: john.smith@google.com
+      firstName: John
+      gender: M
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      languageId: en
+      lastName: SMITH
+      latitude: 41.40338
+      login: ye6
+      longitude: 2.17403
+      mobile: "+33645675637"
+      organizationId: WiserSKILLS
+      roles:
+      - Tempora tempore et qui dolorum.
+      - Eos unde aut.
+      - Et sint id.
+      updatedAt: "2019-01-01T12:52:24Z"
+    required:
+    - id
+    - firstName
+    - lastName
+    - login
+    - email
+    - birthName
+    - organizationId
+  SessionResponse:
+    title: 'Mediatype identifier: session; view=default'
+    type: object
+    properties:
+      areaId:
+        type: string
+        description: The id of the associated area.
+        example: ro7
+        enum:
+        - PROD
+        - DEV
+        - QA
+        - UAT
+        minLength: 2
+        maxLength: 4
+      createdAt:
+        type: string
+        description: The date/time the record was created.
+        example: "2019-01-01T12:52:24Z"
+        format: date-time
+      expiresAt:
+        type: string
+        description: The date/time the session will expire.
+        example: "2019-01-01T12:52:24Z"
+        format: date-time
+      id:
+        type: string
+        description: The UUID of the session.
+        example: 1f052270-dec6-4930-a042-eaec722407d1
+        format: uuid
+      key:
+        type: string
+        description: The id of entity in the document database.
+        example: 1f052270-dec6-4930-a042-eaec722407d1
+        format: uuid
+      organizationId:
+        type: string
+        description: The id of the associated organization.
+        example: WiserSKILLS
+        maxLength: 255
+      tokenId:
+        type: string
+        description: The UUID of the token.
+        example: 1f052270-dec6-4930-a042-eaec722407d1
+        format: uuid
+      updatedAt:
+        type: string
+        description: The date/time the record was updated.
+        example: "2019-01-01T12:52:24Z"
+        format: date-time
+      userId:
+        type: string
+        description: The UUID of the user.
+        example: 1f052270-dec6-4930-a042-eaec722407d1
+        format: uuid
+    description: Session is the type used to represents an application session. (default
+      view)
+    example:
+      areaId: 7m
+      createdAt: "2019-01-01T12:52:24Z"
+      expiresAt: "2019-01-01T12:52:24Z"
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      key: 1f052270-dec6-4930-a042-eaec722407d1
+      organizationId: WiserSKILLS
+      tokenId: 1f052270-dec6-4930-a042-eaec722407d1
+      updatedAt: "2019-01-01T12:52:24Z"
+      userId: 1f052270-dec6-4930-a042-eaec722407d1
+    required:
+    - id
+    - userId
+    - tokenId
+    - organizationId
+    - areaId
+  UserqueryCheckTokenBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryCheckTokenNotAuthorizedResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Access denied. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryCheckTokenNotFoundResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Entity was not found. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryCheckTokenTokenExpiredResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Token has expired. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryCheckTokenTokenInvalidResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Token invalid. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryCheckTokenUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetAllSessionsBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetAllSessionsTokenExpiredResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Token has expired. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetAllSessionsTokenInvalidResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Token invalid. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetAllSessionsUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetIDPURLBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetIDPURLUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetUsersByIDBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetUsersByIDNotAuthorizedResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Access denied. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetUsersByIDNotFoundResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Entity was not found. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetUsersByIDTokenExpiredResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Token has expired. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetUsersByIDTokenInvalidResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Token invalid. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryGetUsersByIDUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserqueryHealthResult:
+    title: UserqueryHealthResult
+    type: object
+    properties:
+      status:
+        type: string
+        description: The status of the service
+        default: OK
+        example: Cumque cumque quis maxime.
+    description: Status information of the service.
+    example:
+      status: Voluptas quam aut sed praesentium saepe.
+  UserqueryRegisteredUserResponseCollection:
+    title: 'Mediatype identifier: registereduser; type=collection; view=default'
+    type: array
+    items:
+      $ref: '#/definitions/RegisteredUserResponse'
+    description: GetUsersByIDResponseBody is the result type for an array of RegisteredUserResponse
+      (default view)
+    example:
+    - B2C: true
+      active: true
+      address: 8, rue de l'Hôtel de Ville
+      birthDate: "1982-01-01"
+      birthName: SMITH
+      cityId: FR92220
+      countryId: FR
+      createdAt: "2019-01-01T12:52:24Z"
+      email: john.smith@google.com
+      firstName: John
+      gender: M
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      languageId: en
+      lastName: SMITH
+      latitude: 41.40338
+      login: jam
+      longitude: 2.17403
+      mobile: "+33645675637"
+      organizationId: WiserSKILLS
+      roles:
+      - Fuga nostrum doloremque quae ipsam.
+      - Cum rem non minus sequi.
+      - Velit qui ullam.
+      updatedAt: "2019-01-01T12:52:24Z"
+    - B2C: true
+      active: true
+      address: 8, rue de l'Hôtel de Ville
+      birthDate: "1982-01-01"
+      birthName: SMITH
+      cityId: FR92220
+      countryId: FR
+      createdAt: "2019-01-01T12:52:24Z"
+      email: john.smith@google.com
+      firstName: John
+      gender: M
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      languageId: en
+      lastName: SMITH
+      latitude: 41.40338
+      login: jam
+      longitude: 2.17403
+      mobile: "+33645675637"
+      organizationId: WiserSKILLS
+      roles:
+      - Fuga nostrum doloremque quae ipsam.
+      - Cum rem non minus sequi.
+      - Velit qui ullam.
+      updatedAt: "2019-01-01T12:52:24Z"
+    - B2C: true
+      active: true
+      address: 8, rue de l'Hôtel de Ville
+      birthDate: "1982-01-01"
+      birthName: SMITH
+      cityId: FR92220
+      countryId: FR
+      createdAt: "2019-01-01T12:52:24Z"
+      email: john.smith@google.com
+      firstName: John
+      gender: M
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      languageId: en
+      lastName: SMITH
+      latitude: 41.40338
+      login: jam
+      longitude: 2.17403
+      mobile: "+33645675637"
+      organizationId: WiserSKILLS
+      roles:
+      - Fuga nostrum doloremque quae ipsam.
+      - Cum rem non minus sequi.
+      - Velit qui ullam.
+      updatedAt: "2019-01-01T12:52:24Z"
+    - B2C: true
+      active: true
+      address: 8, rue de l'Hôtel de Ville
+      birthDate: "1982-01-01"
+      birthName: SMITH
+      cityId: FR92220
+      countryId: FR
+      createdAt: "2019-01-01T12:52:24Z"
+      email: john.smith@google.com
+      firstName: John
+      gender: M
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      languageId: en
+      lastName: SMITH
+      latitude: 41.40338
+      login: jam
+      longitude: 2.17403
+      mobile: "+33645675637"
+      organizationId: WiserSKILLS
+      roles:
+      - Fuga nostrum doloremque quae ipsam.
+      - Cum rem non minus sequi.
+      - Velit qui ullam.
+      updatedAt: "2019-01-01T12:52:24Z"
+  UserquerySamlSignInBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySamlSignInNotAuthorizedResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Access denied. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySamlSignInUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySessionResponseCollection:
+    title: 'Mediatype identifier: session; type=collection; view=default'
+    type: array
+    items:
+      $ref: '#/definitions/SessionResponse'
+    description: GetAllSessionsResponseBody is the result type for an array of SessionResponse
+      (default view)
+    example:
+    - areaId: jyu
+      createdAt: "2019-01-01T12:52:24Z"
+      expiresAt: "2019-01-01T12:52:24Z"
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      key: 1f052270-dec6-4930-a042-eaec722407d1
+      organizationId: WiserSKILLS
+      tokenId: 1f052270-dec6-4930-a042-eaec722407d1
+      updatedAt: "2019-01-01T12:52:24Z"
+      userId: 1f052270-dec6-4930-a042-eaec722407d1
+    - areaId: jyu
+      createdAt: "2019-01-01T12:52:24Z"
+      expiresAt: "2019-01-01T12:52:24Z"
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      key: 1f052270-dec6-4930-a042-eaec722407d1
+      organizationId: WiserSKILLS
+      tokenId: 1f052270-dec6-4930-a042-eaec722407d1
+      updatedAt: "2019-01-01T12:52:24Z"
+      userId: 1f052270-dec6-4930-a042-eaec722407d1
+    - areaId: jyu
+      createdAt: "2019-01-01T12:52:24Z"
+      expiresAt: "2019-01-01T12:52:24Z"
+      id: 1f052270-dec6-4930-a042-eaec722407d1
+      key: 1f052270-dec6-4930-a042-eaec722407d1
+      organizationId: WiserSKILLS
+      tokenId: 1f052270-dec6-4930-a042-eaec722407d1
+      updatedAt: "2019-01-01T12:52:24Z"
+      userId: 1f052270-dec6-4930-a042-eaec722407d1
+  UserquerySignInBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignInInvalidCredentialsResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Username or password is invalid. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignInLoginBlockedResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Login is temporarly blocked due to too many failed attempts. (default
+      view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignInNotAuthorizedResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Access denied. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignInPasswordExpiredResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Password has expired. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignInResponseBody:
+    title: UserquerySignInResponseBody
+    type: object
+    properties:
+      token:
+        type: string
+        description: JWT token
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ
+    example:
+      token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.TJVA95OrM7E2cBab30RMHrHDcEfxjoYZgeFONFh7HgQ
+    required:
+    - token
+  UserquerySignInUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignOutBadArgumentResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Unvalid parameter(s). (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: true
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignOutNotAuthorizedResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Access denied. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignOutNotFoundResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Entity was not found. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignOutTokenExpiredResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: false
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: true
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: true
+    description: Token has expired. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignOutTokenInvalidResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: Token invalid. (default view)
+    example:
+      fault: false
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: false
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+  UserquerySignOutUnexpectedErrorResponseBody:
+    title: 'Mediatype identifier: application/vnd.goa.error; view=default'
+    type: object
+    properties:
+      fault:
+        type: boolean
+        description: Is the error a server-side fault?
+        example: true
+      id:
+        type: string
+        description: ID is a unique identifier for this particular occurrence of the
+          problem.
+        example: 123abc
+      message:
+        type: string
+        description: Message is a human-readable explanation specific to this occurrence
+          of the problem.
+        example: parameter 'p' must be an integer
+      name:
+        type: string
+        description: Name is the name of this class of errors.
+        example: bad_request
+      temporary:
+        type: boolean
+        description: Is the error temporary?
+        example: false
+      timeout:
+        type: boolean
+        description: Is the error a timeout?
+        example: false
+    description: An unexpected error was raised. (default view)
+    example:
+      fault: true
+      id: 123abc
+      message: parameter 'p' must be an integer
+      name: bad_request
+      temporary: false
+      timeout: true
+    required:
+    - name
+    - id
+    - message
+    - temporary
+    - timeout
+    - fault
+securityDefinitions:
+  api_key_header_X-API-KEY:
+    type: apiKey
+    description: Secures endpoints by requiring an API key.
+    name: X-API-KEY
+    in: header
+  basic_header_Authorization:
+    type: basic
+    description: Basic authentication used to authenticate security principal during
+      signin.
+  jwt_header_Authorization:
+    type: apiKey
+    description: |-
+      Secures endpoints by requiring a valid JWT token retrieved via the signin endpoint.
+
+      **Security Scopes**:
+        * `api:internal`: no description
+        * `api:b2c`: no description
+        * `api:b2b:[ORGID]`: no description
+    name: Authorization
+    in: header

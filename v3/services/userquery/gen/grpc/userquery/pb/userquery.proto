@@ -1,0 +1,172 @@
+// Code generated with goa v3.0.9, DO NOT EDIT.
+//
+// userquery protocol buffer definition
+//
+// Command:
+// $ goa gen gitlab.com/wiserskills/v3/services/userquery/design
+
+syntax = "proto3";
+
+package userquery;
+
+option go_package = "userquerypb";
+
+// API service to authenticate users. The service requires an ArangoDB server.
+// Data synchronization with other services is done via a shared NATS Streaming
+// event bus.
+service Userquery {
+	// Signs a user in.
+	rpc SignIn (SignInRequest) returns (SignInResponse);
+	// Signs a user out.
+	rpc SignOut (SignOutRequest) returns (SignOutResponse);
+	// Returns the currently active sessions.
+	rpc GetAllSessions (GetAllSessionsRequest) returns (SessionCollection);
+	// Returns the URL of the IDP to redirect the user to.
+	rpc GetIDPURL (GetIDPURLRequest) returns (GetIDPURLResponse);
+	// Checks if the passed token is valid.
+	rpc CheckToken (CheckTokenRequest) returns (CheckTokenResponse);
+	// Returns the users with the specified ids.
+	rpc GetUsersByID (GetUsersByIDRequest) returns (RegisteredUserCollection);
+}
+
+message SignInRequest {
+	// The id of the organization.
+	string org_id = 4;
+	// The id of the area.
+	string area_id = 5;
+}
+
+message SignInResponse {
+	// JWT token
+	string token = 1;
+}
+
+message SignOutRequest {
+	// The id of the organization
+	string org_id = 3;
+	// The id of the area
+	string area_id = 4;
+}
+
+message SignOutResponse {
+}
+
+message GetAllSessionsRequest {
+	// The id of the organization
+	string org_id = 3;
+	// The id of the area
+	string area_id = 4;
+	// View to render.
+	string view = 5;
+}
+
+message SessionCollection {
+	repeated Session field = 1;
+}
+// Session is the type used to represents an application session.
+message Session {
+	// The UUID of the session.
+	string id = 1;
+	// The id of entity in the document database.
+	string key = 2;
+	// The id of the associated organization.
+	string organization_id = 3;
+	// The id of the associated area.
+	string area_id = 4;
+	// The UUID of the user.
+	string user_id = 5;
+	// The UUID of the token.
+	string token_id = 6;
+	// The date/time the record was created.
+	string created_at = 7;
+	// The date/time the record was updated.
+	string updated_at = 8;
+	// The date/time the session will expire.
+	string expires_at = 9;
+}
+
+message GetIDPURLRequest {
+	// The target host.
+	string host = 2;
+	// The id of the organization
+	string org_id = 3;
+	// The id of the area
+	string area_id = 4;
+}
+
+message GetIDPURLResponse {
+	// The url to redirect the caller to.
+	string location = 1;
+}
+
+message CheckTokenRequest {
+	// The id of the organization
+	string org_id = 3;
+	// The id of the area
+	string area_id = 4;
+}
+
+message CheckTokenResponse {
+}
+
+message GetUsersByIDRequest {
+	// The id of the organization
+	string org_id = 3;
+	// The id of the area
+	string area_id = 4;
+	// The ids of the users to retrieve
+	repeated string ids = 5;
+	// The view used for the returned users
+	string view = 6;
+	// defines if only active users must be returned
+	bool active_only = 7;
+}
+
+message RegisteredUserCollection {
+	repeated RegisteredUser field = 1;
+}
+// Represents a registered user.
+message RegisteredUser {
+	// The UUID of the underlying or referenced entity.
+	string id = 1;
+	// The first name of the user.
+	string first_name = 7;
+	// The last name of the user.
+	string last_name = 8;
+	// Defines if the entity is active.
+	bool active = 6;
+	// The birth name of the user.
+	string birth_name = 9;
+	// The address of the user.
+	string address = 10;
+	// The id of the city.
+	string city_id = 11;
+	// The ISO 3166-1 code of the country.
+	string country_id = 12;
+	// The latitude of the user's address.
+	double latitude = 13;
+	// The longitude of the user's address.
+	double longitude = 14;
+	// The birth date of the user.
+	string birth_date = 15;
+	// The gender of the user.
+	string gender = 16;
+	// The ISO code of the user's prefered language.
+	string language_id = 17;
+	// The email of the user.
+	string email = 18;
+	// The login of the user.
+	string login = 19;
+	// The user mobile phone number.
+	string mobile = 25;
+	// Defines if this user is a B2C user.
+	bool b2_c = 26;
+	// The date/time the record was created.
+	string created_at = 4;
+	// The date/time the record was last updated.
+	string updated_at = 5;
+	// The id of organization where the user was created.
+	string organization_id = 27;
+	// The list of the user roles.
+	repeated string roles = 28;
+}

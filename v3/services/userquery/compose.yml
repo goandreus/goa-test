@@ -1,0 +1,21 @@
+version: "3.2"
+
+services:
+
+  eventbus:
+    image: nats-streaming:latest
+    restart: always
+    command: "-m 8222 -cid wiserskills"
+    ports:
+     - "4222:4222"
+     - "8222:8222"
+
+  arangodb:
+    image: arangodb/arangodb
+    environment:
+      - ARANGO_NO_AUTH=1
+    volumes:
+      - ./compose/arangodb:/var/lib/arangodb3
+    ports:
+      - 8529:8529
+    command: "arangod --server.endpoint tcp://0.0.0.0:8529"
